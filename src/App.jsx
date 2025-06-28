@@ -9,7 +9,7 @@ import PatientDashboard from "./Patient/Dashboard";
  
 function App() {
   return (
-    <BrowserRouter basename="/dental-management">
+    <BrowserRouter>
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Signin />} />
