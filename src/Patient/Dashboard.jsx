@@ -1,36 +1,90 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ import navigation hook
+import { useNavigate } from "react-router-dom";
+import { getCurrentUser, logoutUser } from "../utils/localStorage"; // adjust path if needed
 
 const PatientDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [patient, setPatient] = useState(null);
-  const navigate = useNavigate(); // ✅
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const patientId = "p1"; // Fixed ID for demo
-    const allAppointments = JSON.parse(localStorage.getItem("appointments")) || [];
+    const currentUser = getCurrentUser();
+
+    if (!currentUser || currentUser.role !== "patient") {
+      navigate("/"); // redirect to home if not logged in or not patient
+      return;
+    }
+
+    const patientId = currentUser.email; // using email as unique identifier
+
+    // Initialize patients if needed
     const allPatients = JSON.parse(localStorage.getItem("patients")) || [];
 
-    const currentPatient = allPatients.find((p) => p.id === patientId);
+    // Check if patient exists
+    let currentPatient = allPatients.find((p) => p.email === patientId);
+
+    // If not found, create dummy patient
+    if (!currentPatient) {
+      currentPatient = {
+        id: patientId,
+        fullName: currentUser.name,
+        dob: "1995-06-15",
+        contact: "+91-9876543210",
+        healthInfo: "No known allergies. Regular checkups only.",
+        email: patientId,
+      };
+      allPatients.push(currentPatient);
+      localStorage.setItem("patients", JSON.stringify(allPatients));
+    }
+
+    // Load appointments
+    let allAppointments = JSON.parse(localStorage.getItem("appointments")) || [];
+
+    // Seed sample appointments if none
+    if (allAppointments.length === 0) {
+      allAppointments = [
+        {
+          id: "a1",
+          patientId: patientId,
+          title: "Dental Checkup",
+          datetime: new Date(Date.now() + 86400000).toISOString(), // tomorrow
+          description: "Routine dental cleaning",
+          treatment: "Cleaning",
+          cost: 500,
+          files: [],
+        },
+        {
+          id: "a2",
+          patientId: patientId,
+          title: "Cavity Filling",
+          datetime: new Date(Date.now() - 3 * 86400000).toISOString(), // 3 days ago
+          description: "Filled upper right molar cavity",
+          treatment: "Filling",
+          cost: 1500,
+          files: [],
+        },
+      ];
+      localStorage.setItem("appointments", JSON.stringify(allAppointments));
+    }
+
     const myAppointments = allAppointments.filter((a) => a.patientId === patientId);
 
     setPatient(currentPatient);
     setAppointments(myAppointments);
-  }, []);
+  }, [navigate]);
 
   const today = new Date();
-  const upcoming = appointments.filter(a => new Date(a.datetime) > today);
-  const past = appointments.filter(a => new Date(a.datetime) <= today);
+  const upcoming = appointments.filter((a) => new Date(a.datetime) > today);
+  const past = appointments.filter((a) => new Date(a.datetime) <= today);
 
-  // ✅ Logout handler
   const handleLogout = () => {
-    localStorage.removeItem("loggedInUser"); // optional, if you're simulating login
-    navigate("/"); // go to home
+    logoutUser();
+    navigate("/");
   };
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      {/* ✅ Logout button */}
+      {/* Logout */}
       <div className="flex justify-end mb-4">
         <button
           onClick={handleLogout}
